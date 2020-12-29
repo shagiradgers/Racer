@@ -5,6 +5,7 @@ from random import randint
 
 
 class Menu:
+
     def __init__(self):
         self.color = (0, 0, 0)
         self.games_started = False
@@ -26,22 +27,72 @@ class SettingsMenu:
         pass
 
 
-class MainGame:
+class Scoreboard:
     def __init__(self):
+        pass
+
+
+class LoadSprites:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def load_image(name, color_key=None):
+        fullname = os.path.join('data', name)
+        if not os.path.isfile(fullname):
+            print(f"Файл с изображением '{fullname}' не найден")
+            sys.exit()
+        return pygame.image.load(fullname)
+
+    def draw_sky(self):
+        pygame.draw.rect(screen, 'blue', [
+            (0, 0),
+            (width, height // 3)
+        ])
+
+    def draw_ground(self):
+        # draw road
+        screen.fill('brown', (
+            (width // 4 - 20, 0),
+            (width // 2 + 40, height)
+        ))
+
+        # draw lines on road
+
+        pygame.draw.line(screen, 'black',
+                         (width // 4, 0),
+                         (width // 4, height),
+                         5
+                         )
+
+        pygame.draw.line(screen, 'black',
+                         (width // 2, 0),
+                         (width // 2, height),
+                         5
+                         )
+
+        pygame.draw.line(screen, 'black',
+                         (width - width // 4, 0),
+                         (width - width // 4, height),
+                         5
+                         )
+
+
+class MainGame(pygame.sprite.Sprite):
+    car_img = LoadSprites.load_image('car.png')
+
+    def __init__(self):
+        super().__init__(all_sprites)
+        self.image = self.car_img
+        self.rect = self.car_img.get_rect()
         self.opponent_pos = []
-        self.color = 'yellow'
         self.color_opponent = 'red'
-        self.x = width // 2
-        self.y = height // 2
-        self.size = 40
-        self.res_car = [
-            (self.x - self.size // 2, self.y - self.size // 2),
-            (self.size, self.size)
-        ]
+        self.size = self.car_img.get_size()[0]
+        self.rect.center = width // 2, height // 2
 
     # draw user's car
     def draw_car(self):
-        pygame.draw.rect(screen, self.color, self.res_car)
+        pass
 
     # draw opponent car
     # this func doesnt work correctly yet
@@ -63,86 +114,17 @@ class MainGame:
                 self.opponent_pos.pop(index)
             else:
                 self.opponent_pos[index] = [
-                    (pos[0][0] - 0.2, pos[0][1] + 0.5),
+                    (pos[0][0] - 0.2, pos[0][1] + 0.2),
                     (pos[1][0] + 0.2, pos[1][1] + 0.2)
                 ]
-
-        # change pos of user's car
-        self.res_car = [
-            (self.x - self.size // 2, self.y - self.size // 2),
-            (self.size, self.size)
-        ]
-
-        pygame.draw.rect(screen, self.color, self.res_car)
-
-
-class Scoreboard:
-    def __init__(self):
-        pass
-
-
-class LoadSprites:
-    def __init__(self):
-        pass
-
-    # I still this func from book :)
-    def load_image(self, name, color_key=None):
-        fullname = os.path.join('data', name)
-        if not os.path.isfile(fullname):
-            print(f"Файл с изображением '{fullname}' не найден")
-            sys.exit()
-        return pygame.image.load(fullname)
-
-    def draw_sky(self):
-        pygame.draw.rect(screen, 'blue', [
-            (0, 0),
-            (width, height // 3)
-        ])
-
-    def draw_ground(self):
-        # draw road
-        pygame.draw.polygon(screen, 'brown', [
-            (width // 3, 0),
-            (width - width // 3, 0),
-            (width, height),
-            (0, height)
-        ])
-
-        # draw purple lines on road
-        pygame.draw.line(screen, 'purple',
-                         (width // 3, 0),
-                         (0, height), 4)
-
-        pygame.draw.line(screen, 'purple',
-                         ((width // 2), 0),
-                         (width // 4, height), 4)
-
-        pygame.draw.line(screen, 'purple',
-                         ((width // 2), 0),
-                         (width // 4 * 3, height), 4)
-
-        pygame.draw.line(screen, 'purple',
-                         ((width - width // 3), 0),
-                         (width // 4 * 4, height), 4)
-
-        # draw white lines on road
-
-        pygame.draw.line(screen, 'white',
-                         (width // 3 + ((width // 2 - width // 3) // 2), 0),
-                         ((width // 4 - 0) // 2, height), 4)
-
-        pygame.draw.line(screen, 'white', (width // 2, 0),
-                         (width // 2, height), 4)
-
-        pygame.draw.line(screen, 'white',
-                         (width // 2 + ((width - width // 3) - (width // 2)) // 2, 0),
-                         (width - ((width // 4 * 4) - (width // 4 * 3)) // 2, height), 4)
+        self.image = pygame.transform.scale(self.image, self.rect.size)
 
 
 if __name__ == '__main__':
     running = True
     fps = 100
     clock = pygame.time.Clock()
+    all_sprites = pygame.sprite.Group()
 
     # in future user can change this values in the settings,
     # but now i prefer use this values :)
@@ -159,45 +141,28 @@ if __name__ == '__main__':
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
+
             elif event.type == pygame.MOUSEBUTTONDOWN \
                     and not menu.games_started:
                 menu.update(event.pos)
 
             elif event.type == pygame.KEYDOWN and menu.games_started:
                 if (event.key == pygame.K_d or event.key == ord('в')) \
-                        and game.x + step_x + game.size <= width:
-                    if game.x < width // 2:
-                        game.x = width // 2
-                    else:
-                        game.x += step_x
+                        and game.rect.x + step_x + game.size <= width:
+                    game.rect.x += step_x
 
                 elif (event.key == pygame.K_a or event.key == ord('ф')) \
-                        and game.x - step_x - game.size >= 0:
-                    if game.x > width // 2:
-                        game.x = width // 2
-                    else:
-                        game.x -= step_x
+                        and game.rect.x - step_x - game.size >= 0:
+                    game.rect.x -= step_x
 
                 elif (event.key == pygame.K_w or event.key == ord('ц')) \
-                        and game.y - step_y - game.size >= height // 3:
-                    if game.x < width // 2:
-                        game.x += 4
-                    elif game.x > width // 2:
-                        game.x -= 4
-                    elif game.x == width:
-                        game.x = width // 2
-                    game.y -= step_y
+                        and game.rect.y - step_y - game.size >= height // 3:
+                    game.rect.y -= step_y
                     game.size -= 1
 
                 elif (event.key == pygame.K_s or event.key == ord('ы')) \
-                        and game.y + step_y + game.size <= height:
-                    if game.x > width // 2:
-                        game.x += 4
-                    elif game.x < width // 2:
-                        game.x -= 4
-                    elif game.x == width:
-                        game.x = width // 2
-                    game.y += step_y
+                        and game.rect.y + step_y + game.size <= height:
+                    game.rect.y += step_y
                     game.size += 1
 
         pygame.display.flip()
@@ -206,6 +171,9 @@ if __name__ == '__main__':
             background.draw_ground()
             background.draw_sky()
             game.update()
+            game.draw_car()
+            all_sprites.draw(screen)
+            all_sprites.update()
         else:
             screen.fill('white')
             menu.draw_menu()
