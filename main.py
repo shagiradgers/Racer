@@ -1,7 +1,7 @@
 import pygame
 import os
 import sys
-from random import sample
+from random import sample, randint
 from time import time
 
 
@@ -67,7 +67,7 @@ class MainGame:
 
 class Player(pygame.sprite.Sprite):
     player_img = LoadSprites.load_image('car.png')
-    player_img = pygame.transform.scale(player_img, (90, 135))
+    player_img = pygame.transform.scale(player_img, (110, 155))
 
     def __init__(self):
         super(Player, self).__init__(all_sprites)
@@ -82,18 +82,21 @@ class Player(pygame.sprite.Sprite):
 
 
 class Opponents(pygame.sprite.Sprite):
-    opponent_img = LoadSprites.load_image('opponent.png')
-    opponent_img = pygame.transform.scale(opponent_img, (90, 135))
 
     def __init__(self, x):
         super(Opponents, self).__init__(all_sprites)
-        self.image = self.opponent_img
+        self.image = LoadSprites.load_image('enemy' +
+                                            str(randint(1, 5)) +
+                                            '.png')
+        self.image = pygame.transform.scale(self.image, (90, 135))
         self.rect = self.image.get_rect()
         self.rect.center = x, -self.image.get_size()[1]
+        self.speed = 1
 
     def update(self):
         if not self.rect.x >= height:
-            self.rect.y += 1
+            self.rect.y += self.speed
+        self.rect.y += self.speed
 
 
 if __name__ == '__main__':
@@ -129,24 +132,28 @@ if __name__ == '__main__':
             elif event.type == pygame.KEYDOWN and menu.games_started:
                 end = time()
 
-                if (event.key == pygame.K_d or event.key == ord('в')) \
-                        and player.rect.x + step_x + player.size['x'] <= width and \
+                if (event.key == pygame.K_d or event.key == ord('в') or
+                    event.key == pygame.K_RIGHT) \
+                        and player.rect.x + step_x + player.size['x'] // 2 <= width and \
                         end - start >= delay:
                     player.rect.x += step_x
                     start = time()
 
-                elif (event.key == pygame.K_a or event.key == ord('ф')) \
-                        and player.rect.x - step_x - player.size['x'] >= 0 and \
+                elif (event.key == pygame.K_a or event.key == ord('ф') or
+                        event.key == pygame.K_LEFT) \
+                        and player.rect.x - step_x - player.size['x'] // 2 >= 0 and \
                         end - start >= delay:
                     player.rect.x -= step_x
                     start = time()
 
-                elif (event.key == pygame.K_w or event.key == ord('ц')) \
+                elif (event.key == pygame.K_w or event.key == ord('ц') or
+                      event.key == pygame.K_UP) \
                         and player.rect.y - step_y >= height // 3:
                     player.rect.y -= step_y
                     start = time()
 
-                elif (event.key == pygame.K_s or event.key == ord('ы')) \
+                elif (event.key == pygame.K_s or event.key == ord('ы') or
+                      event.key == pygame.K_DOWN) \
                         and player.rect.y + step_y <= height:
                     player.rect.y += step_y
                     start = time()
@@ -162,7 +169,7 @@ if __name__ == '__main__':
             menu.draw_menu()
 
         # add new opponents
-        if opponents[-1].rect.y >= height // 3 and opponents[-2].rect.y >= height // 3:
+        if opponents[-1].rect.y >= height // 2 and opponents[-2].rect.y >= height // 2:
             for pos in sample(pos_for_ops, 2):
                 opponents.append(Opponents(pos))
 
