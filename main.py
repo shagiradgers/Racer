@@ -4,13 +4,12 @@ import sys
 from random import sample, randint
 from time import time
 from pygame.locals import *
-import sqlite3
 
 
 class Menu:
 
     def __init__(self):
-        # load all image-----------------------------------------
+        # load all image-------------------------------------------
         self.button_play = LoadSprites.load_image('menu/button_play.png')
         self.button_settings = LoadSprites.load_image('menu/button_settings.png')
         self.button_score = LoadSprites.load_image('menu/button_scoreboard.png')
@@ -18,7 +17,7 @@ class Menu:
         self.button_restart = LoadSprites.load_image('menu/button_restart.png')
         self.game_over_img = LoadSprites.load_image('menu/game_over.png')
 
-        # scale some image-----------------------------------------
+        # scale image----------------------------------------------
         self.background = pygame.transform.scale(self.background, (width, height))
 
         # constants------------------------------------------------
@@ -27,7 +26,7 @@ class Menu:
         self.button_settings_size = self.button_settings.get_size()
         self.button_score_size = self.button_score.get_size()
 
-        # pos to buttons---------------------------------------
+        # pos to buttons-------------------------------------------
         self.button_play_rect = self.button_play.get_rect().move(
             width // 2 - self.button_play_size[0] // 2,
             height // 3 - self.button_play_size[1] // 2
@@ -54,18 +53,18 @@ class Menu:
 
         # button "start player"
         screen.blit(
-            self.button_play, (width // 2 - self.button_play_size[0] // 2
-                               , height // 3 - self.button_play_size[1] // 2)
+            self.button_play, (width // 2 - self.button_play_size[0] // 2,
+                               height // 3 - self.button_play_size[1] // 2)
         )
 
         screen.blit(
-            self.button_score, (width // 2 - self.button_score_size[0] // 2
-                                , height // 2 - self.button_score_size[1] // 2)
+            self.button_score, (width // 2 - self.button_score_size[0] // 2,
+                                height // 2 - self.button_score_size[1] // 2)
         )
 
         screen.blit(
-            self.button_settings, (width // 2 - self.button_settings_size[0] // 2
-                                   , height - height // 3 - self.button_settings_size[1] // 2)
+            self.button_settings, (width // 2 - self.button_settings_size[0] // 2,
+                                   height - height // 3 - self.button_settings_size[1] // 2)
         )
 
     def game_over(self):
@@ -83,7 +82,7 @@ class Menu:
 
     def update(self, pos):
         # if user clicked to 'button'
-        if not self.games_started:
+        if not self.games_started and not is_game_over:
             if self.button_play_rect.collidepoint(pos):
                 self.games_started = True
 
@@ -91,16 +90,34 @@ class Menu:
                 score_board.draw_score()
 
             elif self.button_settings_rect.collidepoint(pos):
-                print('SETTINGS')
+                settings.settings_on = True
 
-        elif self.games_started:
+        elif is_game_over:
             if self.button_restart_rect.collidepoint(pos):
-                print('RESTART')
+                Main.start()
 
 
 class SettingsMenu:
     def __init__(self):
-        pass
+        # load all image-----------------------------------------
+        self.background = LoadSprites.load_image('settings/background.png')
+        self.percent_0 = LoadSprites.load_image('settings/0.0.png')
+        self.percent_25 = LoadSprites.load_image('settings/0.25.png')
+        self.percent_50 = LoadSprites.load_image('settings/0.50.png')
+        self.percent_75 = LoadSprites.load_image('settings/0.75.png')
+        self.percent_100 = LoadSprites.load_image('settings/0.100.png')
+        self.button_up = LoadSprites.load_image('settings/button_up.png')
+        self.button_down = LoadSprites.load_image('settings/button_down.png')
+
+        # scale image----------------------------------------------
+        self.background = pygame.transform.scale(self.background, (width, height))
+
+        # constants------------------------------------------------
+        self.settings_on = False
+
+    def draw_menu(self):
+        self.settings_on = True
+        screen.blit(self.background, (0, 0))
 
 
 class ScoreBoard:
@@ -109,6 +126,74 @@ class ScoreBoard:
 
     def draw_score(self):
         screen.fill('white')
+
+
+class Main:
+    def __init__(self):
+        pass
+
+    @staticmethod
+    def start():
+        global health_points, invulnerability, \
+            invulnerability_time, speed, coin_counter, is_game_paused, \
+            is_game_over, menu, player, background, start, \
+            pause, score_board, mobs_group, player_group, \
+            coin_group, opponents, text, coins, used_pos
+
+        health_points = 3
+        invulnerability = False
+        invulnerability_time = time()
+        speed = 1
+        coin_counter = 0
+        is_game_paused = False
+        is_game_over = False
+        opponents = []
+        coins = []
+        used_pos = sample(pos_for_ops, 2)
+        text = font.render(str(coin_counter), False, (0, 0, 0))
+
+        player = Player()
+        background = LoadSprites()
+
+        mobs_group = pygame.sprite.Group()
+        player_group = pygame.sprite.Group()
+        coin_group = pygame.sprite.Group()
+
+        for position in used_pos:
+            opponents.append(Opponents(position))
+            if randint(0, 5) == 2:
+                coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
+
+    @staticmethod
+    def move():
+        global end
+        if pygame.key.get_pressed()[K_UP]:
+            end = time()
+            player.moving('up')
+
+        elif pygame.key.get_pressed()[K_DOWN]:
+            end = time()
+            player.moving('down')
+
+        elif pygame.key.get_pressed()[K_LEFT]:
+            end = time()
+            player.moving('left')
+
+        elif pygame.key.get_pressed()[K_RIGHT]:
+            end = time()
+            player.moving('right')
+
+    @staticmethod
+    def draw_game():
+        background.draw_ground()
+        player.update(invulnerability_time)
+        mobs_group.draw(screen)
+        mobs_group.update()
+        player_group.draw(screen)
+        background.draw_hp(health_points)
+        coin_group.update()
+        coin_group.draw(screen)
+        screen.blit(text, (width - 25 * len(str(coin_counter)), 5))
 
 
 class LoadSprites(pygame.sprite.Sprite):
@@ -124,6 +209,7 @@ class LoadSprites(pygame.sprite.Sprite):
 
         # constants-----------
         self.rect = self.image.get_rect()
+        self.rect.center = -self.image.get_size()[0], 0
 
     @staticmethod
     def load_image(name, color_key=None):
@@ -149,11 +235,16 @@ class LoadSprites(pygame.sprite.Sprite):
         self.rect.center = list(pos)[0], 0
 
     def update(self):
-        global coin_counter
+        global coin_counter, text, speed
         if pygame.sprite.spritecollide(player, coin_group, True):
             coin_counter += 1
+            text = font.render(str(coin_counter), False, (0, 0, 0))
         else:
+            if speed >= 5:
+                speed = 5
             self.rect.y += speed
+
+        screen.blit(self.image, self.rect)
 
 
 class Pause:
@@ -163,23 +254,65 @@ class Pause:
         self.is_pause_on = False
 
         # load image-----------------------
-        self.pause_img = LoadSprites.load_image('pause/background.png')
+        self.background = LoadSprites.load_image('pause/background.png')
+        self.button_resume = LoadSprites.load_image('pause/button_resume.png')
+        self.button_settings = LoadSprites.load_image('pause/button_settings.png')
+        self.button_restart = LoadSprites.load_image('pause/button_restart.png')
 
-        # scale image
-        self.pause_img = pygame.transform.scale(self.pause_img, (width, height))
+        # scale image----------------------
+        self.background = pygame.transform.scale(self.background, (width, height))
+
+        # constants------------------------
+        self.button_resume_rect = self.button_resume.get_rect().move(
+            width // 2 - self.button_resume.get_size()[0] // 2,
+            height // 3 - self.button_resume.get_size()[1] // 2)
+        self.button_settings_rect = self.button_settings.get_rect().move(
+            width // 2 - self.button_settings.get_size()[0] // 2,
+            height // 2 - self.button_settings.get_size()[1] // 2)
+        self.button_restart_rect = self.button_restart.get_rect().move(
+            width // 2 - self.button_restart.get_size()[0] // 2,
+            height - height // 3 - self.button_restart.get_size()[1] // 2)
 
     def pause(self):
         if self.is_pause_on:
-            screen.blit(self.pause_img, (0, 0))
+            screen.blit(self.background, (0, 0))
+            screen.blit(self.button_resume, (
+                self.button_resume_rect
+            ))
+
+            screen.blit(self.button_settings, (
+                self.button_settings_rect
+            ))
+
+            screen.blit(self.button_restart, (
+                self.button_restart_rect
+            ))
+
+    def update(self, pos):
+        if self.is_pause_on:
+            if self.button_resume_rect.collidepoint(pos):
+                self.is_pause_on = False
+
+            elif self.button_restart_rect.collidepoint(pos):
+                self.is_pause_on = False
+                Main.start()
+
+            elif self.button_settings_rect.collidepoint(pos):
+                settings.settings_on = True
 
 
 class Player(pygame.sprite.Sprite):
-    player_img = LoadSprites.load_image('enemy/car.png')
-    player_img = pygame.transform.scale(player_img, (110, 155))
 
     def __init__(self):
         super(Player, self).__init__(player_group)
-        self.image = self.player_img
+
+        # load image-------------------------
+        self.image = LoadSprites.load_image('enemy/car.png')
+
+        # scale image------------------------
+        self.image = pygame.transform.scale(self.image, (90, 135))
+
+        # constants--------------------------
         self.rect = self.image.get_rect()
         self.rect.center = width // 2, height // 2
         self.size = {'x': self.image.get_size()[0],
@@ -218,9 +351,9 @@ class Player(pygame.sprite.Sprite):
             self.rect.y += self.step_y
 
     def update(self, users_time=time()):
-        global invulnerability,\
-            health_points,\
-            invulnerability_time,\
+        global invulnerability, \
+            health_points, \
+            invulnerability_time, \
             is_game_over
 
         if invulnerability:
@@ -247,6 +380,8 @@ class Player(pygame.sprite.Sprite):
         if health_points <= 0:
             is_game_over = True
 
+        screen.blit(self.image, self.rect)
+
 
 class Opponents(pygame.sprite.Sprite):
 
@@ -259,30 +394,35 @@ class Opponents(pygame.sprite.Sprite):
         self.rect.center = x, -self.image.get_size()[1]
         self.speed = 1
 
-    def update(self, speed):
-        global opponents
-        if speed >= 5:
-            speed = 5
+    def update(self):
+        global opponents, speed
+        speed = 5 if speed >= 5 else speed
+
         if self.rect.y <= height:
             self.rect.y += speed
 
 
 if __name__ == '__main__':
-    running = True
+    pygame.font.init()
     fps = 100
     clock = pygame.time.Clock()
+    size = width, height = 600, 600
+    screen = pygame.display.set_mode(size=size)
+
     mobs_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     coin_group = pygame.sprite.Group()
-    size = width, height = 600, 600
+
+    running = True
     health_points = 3
     invulnerability = False
     invulnerability_time = time()
     speed = 1
     coin_counter = 0
-    screen = pygame.display.set_mode(size=size)
     is_game_paused = False
     is_game_over = False
+    font = pygame.font.Font(None, 36)
+    text = font.render(str(coin_counter), False, (0, 0, 0))
 
     menu = Menu()
     player = Player()
@@ -290,13 +430,18 @@ if __name__ == '__main__':
     start = time()
     pause = Pause()
     score_board = ScoreBoard()
+    settings = SettingsMenu()
 
     pos_for_ops = [width // 4, width // 2, width - width // 4]
+    used_pos = sample(pos_for_ops, 2)
     opponents = []
+    coins = []
 
     # add new opponents
-    for pos in sample(pos_for_ops, 2):
+    for pos in used_pos:
         opponents.append(Opponents(pos))
+        if randint(0, 5) == 2:
+            coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
 
     while running:
         for event in pygame.event.get():
@@ -307,53 +452,36 @@ if __name__ == '__main__':
                     and not menu.games_started:
                 menu.update(event.pos)
 
-            # pause menu
-            elif event.type == pygame.KEYDOWN and menu.games_started:
+            elif event.type == pygame.MOUSEBUTTONDOWN \
+                    and pause.is_pause_on:
+                pause.update(event.pos)
+
+            elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if is_game_paused:
+                    if pause.is_pause_on and menu.games_started and not settings.settings_on:
                         pause.is_pause_on = False
-                        is_game_paused = False
-                    else:
+                    elif not settings.settings_on and not pause.is_pause_on and menu.games_started:
                         pause.is_pause_on = True
-                        is_game_paused = True
-                    pause.pause()
+                    elif settings.settings_on:
+                        settings.settings_on = False
+                        Main.draw_game()
+        Main.move()
 
-        if pygame.key.get_pressed()[K_UP]:
-            end = time()
-            player.moving('up')
+        if menu.games_started and not pause.is_pause_on and not is_game_over and not settings.settings_on:
+            Main.draw_game()
 
-        elif pygame.key.get_pressed()[K_DOWN]:
-            end = time()
-            player.moving('down')
-
-        elif pygame.key.get_pressed()[K_LEFT]:
-            end = time()
-            player.moving('left')
-
-        elif pygame.key.get_pressed()[K_RIGHT]:
-            end = time()
-            player.moving('right')
-
-        if menu.games_started and not is_game_paused and not is_game_over:
-            background.draw_ground()
-            player.update(invulnerability_time)
-            mobs_group.draw(screen)
-            mobs_group.update(speed)
-            player_group.draw(screen)
-            background.draw_hp(health_points)
-            coin_group.draw(screen)
-            coin_group.update()
-
-        elif not menu.games_started and not is_game_paused and not is_game_over:
-            screen.fill('white')
+        elif not menu.games_started and not pause.is_pause_on and not is_game_over and not settings.settings_on:
             menu.draw_menu()
 
-        elif is_game_paused:
+        elif pause.is_pause_on and not settings.settings_on:
             pause.pause()
 
         elif is_game_over:
             menu.games_started = False
             menu.game_over()
+
+        elif settings.settings_on:
+            settings.draw_menu()
 
         # add new opponents
         if opponents[-1].rect.y >= height // 2 \
@@ -361,16 +489,14 @@ if __name__ == '__main__':
             used_pos = sample(pos_for_ops, 2)
             for pos in used_pos:
                 opponents.append(Opponents(pos))
-                speed += 0.5
-            if 2 == 2:
-                background.draw_coin(set(pos_for_ops).difference(used_pos))
+                speed += 0.01
+            if randint(0, 5) == 2:
+                coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
 
         # del opponents that was out of screen
         if opponents[0].rect.y >= height \
                 and opponents[0].rect.y >= height:
             opponents.pop(0) and opponents.pop(0)
-
         pygame.display.flip()
         clock.tick(fps)
-        # print(coin_counter)
     pygame.quit()
