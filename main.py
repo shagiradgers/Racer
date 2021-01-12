@@ -114,10 +114,67 @@ class SettingsMenu:
 
         # constants------------------------------------------------
         self.settings_on = False
+        self.button_up_music_rect = self.button_up.get_rect().move(
+            width // 2,
+            height // 3
+        )
+        self.button_down_music_rect = self.button_up.get_rect().move(
+            width // 2 + self.button_up.get_size()[0] + 10,
+            height // 3
+        )
+        self.button_up_vfx_rect = self.button_up.get_rect().move(
+            width // 2,
+            height // 2
+        )
+        self.button_down_vfx_rect = self.button_up.get_rect().move(
+            width // 2 + self.button_up.get_size()[0] + 10,
+            height // 2)
 
     def draw_menu(self):
         self.settings_on = True
         screen.blit(self.background, (0, 0))
+
+        screen.blit(self.button_up, (
+            (width // 2,
+             height // 3)
+        ))
+
+        screen.blit(self.button_down, ((
+            width // 2 + self.button_up.get_size()[0] + 10,
+            height // 3)
+        ))
+
+        screen.blit(self.button_up, ((
+            width // 2,
+            height // 2)
+        ))
+
+        screen.blit(self.button_down, ((
+            width // 2 + self.button_up.get_size()[0] + 10,
+            height // 2)
+        ))
+
+        # percent
+
+        screen.blit(self.percent_100, (
+            width // 2 - self.percent_100.get_size()[0] - 10,
+            height // 3
+        ))
+
+        screen.blit(self.percent_100, (
+            width // 2 - self.percent_100.get_size()[0] - 10,
+            height // 2
+        ))
+
+    def update(self, pos):
+        if self.button_up_music_rect.collidepoint(pos):
+            print('button_up_music')
+        elif self.button_down_music_rect.collidepoint(pos):
+            print('button_down_music')
+        elif self.button_up_vfx_rect.collidepoint(pos):
+            print('button_up_vfx')
+        elif self.button_down_vfx_rect.collidepoint(pos):
+            print('button_down_vfx')
 
 
 class ScoreBoard:
@@ -239,6 +296,7 @@ class LoadSprites(pygame.sprite.Sprite):
         if pygame.sprite.spritecollide(player, coin_group, True):
             coin_counter += 1
             text = font.render(str(coin_counter), False, (0, 0, 0))
+            coin_sound.play()
         else:
             if speed >= 5:
                 speed = 5
@@ -376,9 +434,12 @@ class Player(pygame.sprite.Sprite):
             health_points -= 1
             invulnerability = True
             invulnerability_time = time()
+            if health_points != 0:
+                player_crush.play()
 
         if health_points <= 0:
             is_game_over = True
+            game_over_sound.play()
 
         screen.blit(self.image, self.rect)
 
@@ -404,6 +465,7 @@ class Opponents(pygame.sprite.Sprite):
 
 if __name__ == '__main__':
     pygame.font.init()
+    pygame.init()
     fps = 100
     clock = pygame.time.Clock()
     size = width, height = 600, 600
@@ -412,6 +474,12 @@ if __name__ == '__main__':
     mobs_group = pygame.sprite.Group()
     player_group = pygame.sprite.Group()
     coin_group = pygame.sprite.Group()
+
+    main_sound = pygame.mixer.Sound('data/music/main.ogg')
+    game_over_sound = pygame.mixer.Sound('data/music/dead.ogg')
+    coin_sound = pygame.mixer.Sound('data/music/coin.ogg')
+    player_crush = pygame.mixer.Sound('data/music/crush.ogg')
+    menu_sound = pygame.mixer.Sound('data/music/menu.ogg')
 
     running = True
     health_points = 3
@@ -423,6 +491,8 @@ if __name__ == '__main__':
     is_game_over = False
     font = pygame.font.Font(None, 36)
     text = font.render(str(coin_counter), False, (0, 0, 0))
+    menu_sound.stop()
+    main_sound.play()
 
     menu = Menu()
     player = Player()
@@ -455,6 +525,10 @@ if __name__ == '__main__':
             elif event.type == pygame.MOUSEBUTTONDOWN \
                     and pause.is_pause_on:
                 pause.update(event.pos)
+
+            elif event.type == pygame.MOUSEBUTTONDOWN \
+                    and settings.settings_on:
+                settings.update(event.pos)
 
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
@@ -489,7 +563,7 @@ if __name__ == '__main__':
             used_pos = sample(pos_for_ops, 2)
             for pos in used_pos:
                 opponents.append(Opponents(pos))
-                speed += 0.01
+                speed += 0.05
             if randint(0, 5) == 2:
                 coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
 
