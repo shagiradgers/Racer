@@ -10,15 +10,23 @@ class Menu:
 
     def __init__(self):
         # load all image-------------------------------------------
-        self.button_play = LoadSprites.load_image('menu/button_play.png')
-        self.button_settings = LoadSprites.load_image('menu/button_settings.png')
-        self.button_score = LoadSprites.load_image('menu/button_scoreboard.png')
-        self.background = LoadSprites.load_image('menu/menu_background.png')
-        self.button_restart = LoadSprites.load_image('menu/button_restart.png')
-        self.game_over_img = LoadSprites.load_image('menu/game_over.png')
+        self.button_play = \
+            LoadSprites.load_image('menu/button_play.png')
+        self.button_settings = \
+            LoadSprites.load_image('menu/button_settings.png')
+        self.button_score = \
+            LoadSprites.load_image('menu/button_scoreboard.png')
+        self.background = \
+            LoadSprites.load_image('menu/menu_background.png')
+        self.button_restart = \
+            LoadSprites.load_image('menu/button_restart.png')
+        self.game_over_img = \
+            LoadSprites.load_image('menu/game_over.png')
 
         # scale image----------------------------------------------
-        self.background = pygame.transform.scale(self.background, (width, height))
+        self.background = pygame.transform.scale(
+            self.background,
+            (width, height))
 
         # constants------------------------------------------------
         self.games_started = False
@@ -53,18 +61,25 @@ class Menu:
 
         # button "start player"
         screen.blit(
-            self.button_play, (width // 2 - self.button_play_size[0] // 2,
-                               height // 3 - self.button_play_size[1] // 2)
+            self.button_play, (width // 2
+                               - self.button_play_size[0] // 2,
+                               height // 3
+                               - self.button_play_size[1] // 2)
         )
 
         screen.blit(
-            self.button_score, (width // 2 - self.button_score_size[0] // 2,
-                                height // 2 - self.button_score_size[1] // 2)
+            self.button_score, (width // 2
+                                - self.button_score_size[0] // 2,
+                                height // 2
+                                - self.button_score_size[1] // 2)
         )
 
         screen.blit(
-            self.button_settings, (width // 2 - self.button_settings_size[0] // 2,
-                                   height - height // 3 - self.button_settings_size[1] // 2)
+            self.button_settings, (width // 2
+                                   - self.button_settings_size[0] // 2,
+                                   height -
+                                   height // 3 -
+                                   self.button_settings_size[1] // 2)
         )
 
     def game_over(self):
@@ -87,7 +102,7 @@ class Menu:
                 self.games_started = True
 
             elif self.button_score_rect.collidepoint(pos):
-                score_board.draw_score()
+                score_board.is_scoreboard_on = True
 
             elif self.button_settings_rect.collidepoint(pos):
                 settings.settings_on = True
@@ -100,17 +115,28 @@ class Menu:
 class SettingsMenu:
     def __init__(self):
         # load all image-----------------------------------------
-        self.background = LoadSprites.load_image('settings/background.png')
-        self.percent_0 = LoadSprites.load_image('settings/0.0.png')
-        self.percent_25 = LoadSprites.load_image('settings/0.25.png')
-        self.percent_50 = LoadSprites.load_image('settings/0.50.png')
-        self.percent_75 = LoadSprites.load_image('settings/0.75.png')
-        self.percent_100 = LoadSprites.load_image('settings/0.100.png')
-        self.button_up = LoadSprites.load_image('settings/button_up.png')
-        self.button_down = LoadSprites.load_image('settings/button_down.png')
+        self.background = \
+            LoadSprites.load_image('settings/background.png')
+        self.percent_0 = \
+            LoadSprites.load_image('settings/0.0.png')
+        self.percent_25 = \
+            LoadSprites.load_image('settings/0.25.png')
+        self.percent_50 = \
+            LoadSprites.load_image('settings/0.50.png')
+        self.percent_75 = \
+            LoadSprites.load_image('settings/0.75.png')
+        self.percent_100 = \
+            LoadSprites.load_image('settings/0.100.png')
+        self.button_up = \
+            LoadSprites.load_image('settings/button_up.png')
+        self.button_down = \
+            LoadSprites.load_image('settings/button_down.png')
 
         # scale image----------------------------------------------
-        self.background = pygame.transform.scale(self.background, (width, height))
+        self.background = pygame.transform.scale(
+            self.background,
+            (width, height)
+        )
 
         # constants------------------------------------------------
         self.settings_on = False
@@ -129,9 +155,15 @@ class SettingsMenu:
         self.button_down_vfx_rect = self.button_up.get_rect().move(
             width // 2 + self.button_up.get_size()[0] + 10,
             height // 2)
+        self.percents = [
+            self.percent_0,
+            self.percent_25,
+            self.percent_50,
+            self.percent_75,
+            self.percent_100
+        ]
 
     def draw_menu(self):
-        self.settings_on = True
         screen.blit(self.background, (0, 0))
 
         screen.blit(self.button_up, (
@@ -154,35 +186,89 @@ class SettingsMenu:
             height // 2)
         ))
 
-        # percent
+        self.draw_percent(
+            self.percents[volume_music // 25],
+            self.percents[volume_vfx // 25]
+        )
 
-        screen.blit(self.percent_100, (
-            width // 2 - self.percent_100.get_size()[0] - 10,
+    def update(self, pos):
+        global volume_music, volume_vfx
+        if self.button_up_music_rect.collidepoint(pos):
+            if volume_music != 100:
+                volume_music += 25
+
+        elif self.button_down_music_rect.collidepoint(pos):
+            if volume_music != 0:
+                volume_music -= 25
+
+        elif self.button_up_vfx_rect.collidepoint(pos):
+            if volume_vfx != 100:
+                volume_vfx += 25
+
+        elif self.button_down_vfx_rect.collidepoint(pos):
+            if volume_vfx != 0:
+                volume_vfx -= 25
+
+        coin_sound.set_volume(volume_vfx)
+        player_crush.set_volume(volume_vfx)
+        main_sound.set_volume(volume_music)
+        menu_sound.set_volume(volume_music)
+        self.draw_percent(
+            self.percents[volume_music // 25],
+            self.percents[volume_vfx // 25]
+        )
+
+    def draw_percent(self, percent_music, percent_vfx):
+        screen.blit(percent_music, (
+            width // 2 - percent_music.get_size()[0] - 10,
             height // 3
         ))
 
-        screen.blit(self.percent_100, (
-            width // 2 - self.percent_100.get_size()[0] - 10,
+        screen.blit(percent_vfx, (
+            width // 2 - percent_vfx.get_size()[0] - 10,
             height // 2
         ))
-
-    def update(self, pos):
-        if self.button_up_music_rect.collidepoint(pos):
-            print('button_up_music')
-        elif self.button_down_music_rect.collidepoint(pos):
-            print('button_down_music')
-        elif self.button_up_vfx_rect.collidepoint(pos):
-            print('button_up_vfx')
-        elif self.button_down_vfx_rect.collidepoint(pos):
-            print('button_down_vfx')
 
 
 class ScoreBoard:
     def __init__(self):
-        pass
+        # load all image-----------------------------------------
+        self.main_background = LoadSprites.load_image('scoreboard/main_background.png')
+        self.background = LoadSprites.load_image('scoreboard/background.png')
+        self.button_left = LoadSprites.load_image('scoreboard/left.png')
+        self.button_right = LoadSprites.load_image('scoreboard/right.png')
+
+        # scale image----------------------------------------------
+        self.main_background = pygame.transform.scale(
+            self.main_background,
+            (width, height)
+        )
+        self.background = pygame.transform.scale(
+            self.background,
+            (width, height)
+        )
+
+        # constants------------------------------------------------
+        self.button_right_rect = self.button_right.get_rect().move(
+            (30,
+             height - 30)
+        )
+        self.button_left_rect = self.button_left.get_rect().move(
+            (width - 30 - self.button_right.get_size()[0],
+             height - 30)
+        )
+        self.is_scoreboard_on = False
 
     def draw_score(self):
-        screen.fill('white')
+        screen.blit(self.main_background, (0, 0))
+        screen.blit(self.button_left, (30, height - 30))
+        screen.blit(self.button_right, (width - 30 - self.button_right.get_size()[0], height - 30))
+
+    def update(self, pos):
+        if self.button_left_rect.collidepoint(pos):
+            print('left')
+        elif self.button_right_rect.collidepoint(pos):
+            print('right')
 
 
 class Main:
@@ -219,7 +305,11 @@ class Main:
         for position in used_pos:
             opponents.append(Opponents(position))
             if randint(0, 5) == 2:
-                coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
+                coins.append(
+                    LoadSprites().draw_coin(
+                        set(pos_for_ops).difference(used_pos)
+                    )
+                )
 
     @staticmethod
     def move():
@@ -312,13 +402,20 @@ class Pause:
         self.is_pause_on = False
 
         # load image-----------------------
-        self.background = LoadSprites.load_image('pause/background.png')
-        self.button_resume = LoadSprites.load_image('pause/button_resume.png')
-        self.button_settings = LoadSprites.load_image('pause/button_settings.png')
-        self.button_restart = LoadSprites.load_image('pause/button_restart.png')
+        self.background = \
+            LoadSprites.load_image('pause/background.png')
+        self.button_resume = \
+            LoadSprites.load_image('pause/button_resume.png')
+        self.button_settings = \
+            LoadSprites.load_image('pause/button_settings.png')
+        self.button_restart = \
+            LoadSprites.load_image('pause/button_restart.png')
 
         # scale image----------------------
-        self.background = pygame.transform.scale(self.background, (width, height))
+        self.background = pygame.transform.scale(
+            self.background,
+            (width, height)
+        )
 
         # constants------------------------
         self.button_resume_rect = self.button_resume.get_rect().move(
@@ -439,6 +536,7 @@ class Player(pygame.sprite.Sprite):
 
         if health_points <= 0:
             is_game_over = True
+            main_sound.stop()
             game_over_sound.play()
 
         screen.blit(self.image, self.rect)
@@ -480,6 +578,11 @@ if __name__ == '__main__':
     coin_sound = pygame.mixer.Sound('data/music/coin.ogg')
     player_crush = pygame.mixer.Sound('data/music/crush.ogg')
     menu_sound = pygame.mixer.Sound('data/music/menu.ogg')
+    pause_sound = pygame.mixer.Sound('data/music/pause.ogg')
+
+    is_pause_sound_on = False
+    is_menu_sound_on = True
+    is_main_sound_on = False
 
     running = True
     health_points = 3
@@ -491,8 +594,9 @@ if __name__ == '__main__':
     is_game_over = False
     font = pygame.font.Font(None, 36)
     text = font.render(str(coin_counter), False, (0, 0, 0))
-    menu_sound.stop()
-    main_sound.play()
+    menu_sound.play()
+    volume_music = 100
+    volume_vfx = 100
 
     menu = Menu()
     player = Player()
@@ -511,7 +615,11 @@ if __name__ == '__main__':
     for pos in used_pos:
         opponents.append(Opponents(pos))
         if randint(0, 5) == 2:
-            coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
+            coins.append(
+                LoadSprites().draw_coin(
+                    set(pos_for_ops).difference(used_pos)
+                )
+            )
 
     while running:
         for event in pygame.event.get():
@@ -519,7 +627,9 @@ if __name__ == '__main__':
                 running = False
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
-                    and not menu.games_started:
+                    and not menu.games_started \
+                    and not score_board.is_scoreboard_on \
+                    and not settings.settings_on:
                 menu.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
@@ -530,29 +640,79 @@ if __name__ == '__main__':
                     and settings.settings_on:
                 settings.update(event.pos)
 
+            elif event.type == pygame.MOUSEBUTTONDOWN \
+                    and score_board.is_scoreboard_on:
+                score_board.update(event.pos)
+
             elif event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_ESCAPE:
-                    if pause.is_pause_on and menu.games_started and not settings.settings_on:
+                    if pause.is_pause_on and \
+                            menu.games_started and not \
+                            settings.settings_on:
                         pause.is_pause_on = False
-                    elif not settings.settings_on and not pause.is_pause_on and menu.games_started:
+                        pause_sound.stop()
+
+                    elif not settings.settings_on and not \
+                            pause.is_pause_on and \
+                            menu.games_started:
                         pause.is_pause_on = True
+
                     elif settings.settings_on:
                         settings.settings_on = False
-                        Main.draw_game()
+                        if menu.games_started:
+                            Main.draw_game()
         Main.move()
 
-        if menu.games_started and not pause.is_pause_on and not is_game_over and not settings.settings_on:
+        if menu.games_started and not \
+                pause.is_pause_on and not \
+                is_game_over and not \
+                settings.settings_on and not \
+                score_board.is_scoreboard_on:
             Main.draw_game()
+            if not is_main_sound_on:
+                main_sound.play(10)
+                pause_sound.stop()
+                menu_sound.stop()
+                game_over_sound.stop()
+                is_main_sound_on = True
+                is_pause_sound_on = False
+                is_menu_sound_on = False
 
-        elif not menu.games_started and not pause.is_pause_on and not is_game_over and not settings.settings_on:
+        elif not menu.games_started and not \
+                pause.is_pause_on and not \
+                is_game_over and not \
+                settings.settings_on and not \
+                score_board.is_scoreboard_on:
             menu.draw_menu()
+            if not is_menu_sound_on:
+                main_sound.stop()
+                pause_sound.stop()
+                menu_sound.play(10)
+                game_over_sound.stop()
+                is_main_sound_on = False
+                is_pause_sound_on = False
+                is_menu_sound_on = True
 
-        elif pause.is_pause_on and not settings.settings_on:
+        elif pause.is_pause_on and not \
+                settings.settings_on:
             pause.pause()
+            if not is_pause_sound_on:
+                main_sound.stop()
+                pause_sound.play(10)
+                menu_sound.stop()
+                game_over_sound.stop()
+                is_main_sound_on = False
+                is_pause_sound_on = True
+                is_menu_sound_on = False
 
         elif is_game_over:
+            if menu.games_started:
+                Main.draw_game()
             menu.games_started = False
             menu.game_over()
+
+        elif score_board.is_scoreboard_on:
+            score_board.draw_score()
 
         elif settings.settings_on:
             settings.draw_menu()
@@ -565,7 +725,11 @@ if __name__ == '__main__':
                 opponents.append(Opponents(pos))
                 speed += 0.05
             if randint(0, 5) == 2:
-                coins.append(LoadSprites().draw_coin(set(pos_for_ops).difference(used_pos)))
+                coins.append(
+                    LoadSprites().draw_coin(
+                        set(pos_for_ops).difference(used_pos)
+                    )
+                )
 
         # del opponents that was out of screen
         if opponents[0].rect.y >= height \
