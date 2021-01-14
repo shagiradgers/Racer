@@ -4,6 +4,7 @@ import sys
 from random import sample, randint
 from time import time
 from pygame.locals import *
+import sqlite3
 
 
 class Menu:
@@ -209,10 +210,12 @@ class SettingsMenu:
             if volume_vfx != 0:
                 volume_vfx -= 25
 
-        coin_sound.set_volume(volume_vfx)
-        player_crush.set_volume(volume_vfx)
-        main_sound.set_volume(volume_music)
-        menu_sound.set_volume(volume_music)
+        coin_sound.set_volume(volume_vfx / 100)
+        player_crush.set_volume(volume_vfx / 100)
+        main_sound.set_volume(volume_music / 100)
+        menu_sound.set_volume(volume_music / 100)
+        pause_sound.set_volume(volume_music / 100)
+        game_over_sound.set_volume(volume_music / 100)
         self.draw_percent(
             self.percents[volume_music // 25],
             self.percents[volume_vfx // 25]
@@ -250,19 +253,19 @@ class ScoreBoard:
 
         # constants------------------------------------------------
         self.button_right_rect = self.button_right.get_rect().move(
-            (30,
+            (width - 30 - self.button_right.get_size()[0],
              height - 30)
         )
         self.button_left_rect = self.button_left.get_rect().move(
-            (width - 30 - self.button_right.get_size()[0],
+            (30,
              height - 30)
         )
         self.is_scoreboard_on = False
 
     def draw_score(self):
         screen.blit(self.main_background, (0, 0))
-        screen.blit(self.button_left, (30, height - 30))
-        screen.blit(self.button_right, (width - 30 - self.button_right.get_size()[0], height - 30))
+        screen.blit(self.button_left, self.button_left_rect)
+        screen.blit(self.button_right, self.button_right_rect)
 
     def update(self, pos):
         if self.button_left_rect.collidepoint(pos):
@@ -341,6 +344,20 @@ class Main:
         coin_group.update()
         coin_group.draw(screen)
         screen.blit(text, (width - 25 * len(str(coin_counter)), 5))
+
+    @staticmethod
+    def get_data_from_db():
+        cur = con.cursor()
+        try:
+            data = cur.execute(''' SELECT * 
+            FROM records''').fetchall()
+        except sqlite3.OperationalError:
+            cur.execute('''CREATE TABLE IF NOT EXISTS records(
+            user_name TEXT,
+            score INTEGER)''').fetchall()
+            con.commit()
+            data = []
+        return data
 
 
 class LoadSprites(pygame.sprite.Sprite):
@@ -597,6 +614,7 @@ if __name__ == '__main__':
     menu_sound.play()
     volume_music = 100
     volume_vfx = 100
+    con = sqlite3.connect('data/score_db.db')
 
     menu = Menu()
     player = Player()
@@ -633,7 +651,8 @@ if __name__ == '__main__':
                 menu.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
-                    and pause.is_pause_on:
+                    and pause.is_pause_on \
+                    and not settings.settings_on:
                 pause.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
@@ -661,6 +680,9 @@ if __name__ == '__main__':
                         settings.settings_on = False
                         if menu.games_started:
                             Main.draw_game()
+
+                    elif score_board.is_scoreboard_on:
+                        score_board.is_scoreboard_on = False
         Main.move()
 
         if menu.games_started and not \
