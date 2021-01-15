@@ -782,7 +782,7 @@ if __name__ == '__main__':
                         if score_board.text != '':
                             score_board.text = score_board.text[:-1]
                     else:
-                        if event.unicode in ascii_letters and len(score_board.text) != 10:
+                        if event.unicode in ascii_letters and len(score_board.text) != 20:
                             score_board.text += event.unicode
                     user_name = font.render(score_board.text, False, (0, 0, 0))
 
@@ -838,7 +838,7 @@ if __name__ == '__main__':
             menu.game_over()
             score_board.need_draw_text = True
             screen.blit(user_name, (
-                menu.enter_name_rect.centerx,
+                menu.enter_name_rect.centerx - 120,
                 menu.enter_name_rect.centery - user_name.get_size()[1]
             ))
 
