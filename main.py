@@ -77,8 +77,8 @@ class Menu:
         )
 
         self.button_guide_rect = self.button_guide.get_rect().move(
-            width // 2 - self.button_guide.get_size()[0] // 2,
-            height - height // 4 - self.button_guide.get_size()[1] // 2
+            width - self.button_guide.get_size()[0],
+            0
         )
 
     # отрисовка главного меню
