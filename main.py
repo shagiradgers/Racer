@@ -1,11 +1,11 @@
-import pygame
-import os
 import sys
-from random import sample, randint
+import sqlite3
+import os
+import pygame
+from string import ascii_letters
 from time import time
 from pygame.locals import *
-import sqlite3
-from string import ascii_letters
+from random import sample, randint
 
 
 class Menu:
@@ -81,6 +81,7 @@ class Menu:
             height - height // 4 - self.button_guide.get_size()[1] // 2
         )
 
+    # отрисовка главного меню
     def draw_menu(self):
         # draw background
         screen.blit(self.background, (0, 0))
@@ -102,6 +103,7 @@ class Menu:
             self.button_guide, self.button_guide_rect
         )
 
+    # отрисовка меню проигрыша
     def game_over(self):
         # image of game over
         screen.blit(self.game_over_img, (
@@ -151,6 +153,7 @@ class Menu:
                 score_board.add_new_data()
                 Main.start()
 
+    # отрисовка меню помощи
     def draw_guide(self):
         screen.blit(self.guide_menu, (0, 0))
 
@@ -206,6 +209,7 @@ class SettingsMenu:
             self.percent_100
         ]
 
+    # отрисовка меню настроек
     def draw_menu(self):
         screen.blit(self.background, (0, 0))
 
@@ -263,6 +267,7 @@ class SettingsMenu:
             self.percents[volume_vfx // 25]
         )
 
+    # отрисовка процентов
     def draw_percent(self, percent_music, percent_vfx):
         screen.blit(percent_music, (
             width // 2 - percent_music.get_size()[0] - 10,
@@ -308,6 +313,7 @@ class ScoreBoard:
         self.text = ''
         self.data = []
 
+    # получение данных из таблицы
     def get_data_from_db(self):
         cur = con.cursor()
         try:
@@ -321,6 +327,7 @@ class ScoreBoard:
             score TEXT)''').fetchall()
             con.commit()
 
+    # добавление новых данных в таблицу
     def add_new_data(self):
         if not self.text.split():
             self.text = 'Неизвестный гонщик'
@@ -331,6 +338,7 @@ class ScoreBoard:
         self.text = ''
         self.need_draw_text = False
 
+    # отрисовка очков
     def draw_score(self):
         if self.page == 1:
             screen.blit(self.main_background, (0, 0))
@@ -350,8 +358,8 @@ class ScoreBoard:
             offset = 31 + 20 + 4 - font.get_height() // 2
         try:
             for info in range(self.page * 9 - 9, self.page * 9):
-                text = font.render(' '.join(self.data[info]), False, (0, 0, 0))
-                screen.blit(text, (
+                screen.blit(font.render(
+                    ' '.join(self.data[info]), False, (0, 0, 0)), (
                     40,
                     offset
                 ))
@@ -368,9 +376,8 @@ class ScoreBoard:
 
 
 class Main:
-    def __init__(self):
-        pass
 
+    # объявление переменных
     @staticmethod
     def start():
         global health_points, invulnerability, \
@@ -412,6 +419,7 @@ class Main:
                     )
                 )
 
+    # перемещение героя в зависимости от нажатой кнопки
     @staticmethod
     def move():
         global end
@@ -431,6 +439,7 @@ class Main:
             end = time()
             player.moving('right')
 
+    # отрисовка игры
     @staticmethod
     def draw_game():
         background.draw_ground()
@@ -459,6 +468,7 @@ class LoadSprites(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.center = -self.image.get_size()[0], 0
 
+    # загрзки изображений
     @staticmethod
     def load_image(name, color_key=None):
         fullname = os.path.join('data', name)
@@ -467,9 +477,11 @@ class LoadSprites(pygame.sprite.Sprite):
             sys.exit()
         return pygame.image.load(fullname)
 
+    # отрисовка дороги
     def draw_ground(self):
         screen.blit(self.road, (0, 0))
 
+    # отрисовка жизней
     def draw_hp(self, hp):
         offset_y = self.hp.get_size()[1]
         x_pos = 5
@@ -479,6 +491,7 @@ class LoadSprites(pygame.sprite.Sprite):
             screen.blit(self.hp, (x_pos, y_pos))
             y_pos += offset_y
 
+    # отрисовка монетки
     def draw_coin(self, pos):
         self.rect.center = list(pos)[0], 0
 
@@ -529,6 +542,7 @@ class Pause:
             width // 2 - self.button_restart.get_size()[0] // 2,
             height - height // 3 - self.button_restart.get_size()[1] // 2)
 
+    # отрисовка меню паузы
     def pause(self):
         if self.is_pause_on:
             screen.blit(self.background, (0, 0))
@@ -577,6 +591,7 @@ class Player(pygame.sprite.Sprite):
         self.step_x = width // 4
         self.quantity = 0
 
+    # перемещение игрока в пространстве
     def moving(self, direction):
         global start
 
@@ -775,16 +790,17 @@ if __name__ == '__main__':
                     elif score_board.is_scoreboard_on:
                         score_board.is_scoreboard_on = False
                         score_board.page = 1
+
                 if score_board.need_draw_text:
-                    if event.key == pygame.K_DELETE or \
-                            event.key == pygame.K_ESCAPE or \
-                            event.key == pygame.K_q:
+                    if event.key == pygame.K_BACKSPACE:
                         if score_board.text != '':
                             score_board.text = score_board.text[:-1]
                     else:
-                        if event.unicode in ascii_letters and len(score_board.text) != 20:
+                        if event.unicode in ascii_letters \
+                                and len(score_board.text) != 20:
                             score_board.text += event.unicode
-                    user_name = font.render(score_board.text, False, (0, 0, 0))
+                    user_name = \
+                        font.render(score_board.text, False, (0, 0, 0))
 
         Main.move()
 
@@ -837,6 +853,7 @@ if __name__ == '__main__':
             menu.games_started = False
             menu.game_over()
             score_board.need_draw_text = True
+            # 120 - это расстояние от центра кнпок до ее края
             screen.blit(user_name, (
                 menu.enter_name_rect.centerx - 120,
                 menu.enter_name_rect.centery - user_name.get_size()[1]
