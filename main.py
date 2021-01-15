@@ -5,6 +5,7 @@ from random import sample, randint
 from time import time
 from pygame.locals import *
 import sqlite3
+from string import ascii_letters
 
 
 class Menu:
@@ -23,37 +24,61 @@ class Menu:
             LoadSprites.load_image('menu/button_restart.png')
         self.game_over_img = \
             LoadSprites.load_image('menu/game_over.png')
+        self.enter_name = \
+            LoadSprites.load_image('menu/enter_name.png')
+        self.button_menu = \
+            LoadSprites.load_image('menu/button_menu.png')
+        self.button_guide = \
+            LoadSprites.load_image('menu/button_guide.png')
+        self.guide_menu = \
+            LoadSprites.load_image('menu/guide.png')
 
         # scale image----------------------------------------------
         self.background = pygame.transform.scale(
             self.background,
             (width, height))
-
+        self.guide_menu = pygame.transform.scale(
+            self.guide_menu,
+            (width, height)
+        )
         # constants------------------------------------------------
         self.games_started = False
-        self.button_play_size = self.button_play.get_size()
-        self.button_settings_size = self.button_settings.get_size()
-        self.button_score_size = self.button_score.get_size()
+        self.is_guide_on = False
 
         # pos to buttons-------------------------------------------
         self.button_play_rect = self.button_play.get_rect().move(
-            width // 2 - self.button_play_size[0] // 2,
-            height // 3 - self.button_play_size[1] // 2
+            width // 2 - self.button_play.get_size()[0] // 2,
+            height // 3 - self.button_play.get_size()[1] // 2
         )
 
         self.button_settings_rect = self.button_settings.get_rect().move(
-            width // 2 - self.button_settings_size[0] // 2,
-            height - height // 3 - self.button_settings_size[1] // 2
+            width // 2 - self.button_settings.get_size()[0] // 2,
+            height - height // 3 - self.button_settings.get_size()[1] // 2
         )
 
         self.button_score_rect = self.button_score.get_rect().move(
-            width // 2 - self.button_score_size[0] // 2,
-            height // 2 - self.button_score_size[1] // 2
+            width // 2 - self.button_score.get_size()[0] // 2,
+            height // 2 - self.button_score.get_size()[1] // 2
         )
 
         self.button_restart_rect = self.button_restart.get_rect().move(
             width // 2 - self.button_restart.get_size()[0] // 2,
-            height // 2 - self.button_restart.get_size()[1] // 2
+            height - height // 4 - self.button_restart.get_size()[1]
+        )
+
+        self.button_menu_rect = self.button_menu.get_rect().move(
+            width // 2 - self.button_menu.get_size()[0] // 2,
+            height - height // 6 - self.button_menu.get_size()[1] // 2
+        )
+
+        self.enter_name_rect = self.enter_name.get_rect().move(
+            width // 2 - self.enter_name.get_size()[0] // 2,
+            height // 2 - self.enter_name.get_size()[1] // 2
+        )
+
+        self.button_guide_rect = self.button_guide.get_rect().move(
+            width // 2 - self.button_guide.get_size()[0] // 2,
+            height - height // 4 - self.button_guide.get_size()[1] // 2
         )
 
     def draw_menu(self):
@@ -62,25 +87,19 @@ class Menu:
 
         # button "start player"
         screen.blit(
-            self.button_play, (width // 2
-                               - self.button_play_size[0] // 2,
-                               height // 3
-                               - self.button_play_size[1] // 2)
+            self.button_play, self.button_play_rect
         )
 
         screen.blit(
-            self.button_score, (width // 2
-                                - self.button_score_size[0] // 2,
-                                height // 2
-                                - self.button_score_size[1] // 2)
+            self.button_score, self.button_score_rect
         )
 
         screen.blit(
-            self.button_settings, (width // 2
-                                   - self.button_settings_size[0] // 2,
-                                   height -
-                                   height // 3 -
-                                   self.button_settings_size[1] // 2)
+            self.button_settings, self.button_settings_rect
+        )
+
+        screen.blit(
+            self.button_guide, self.button_guide_rect
         )
 
     def game_over(self):
@@ -92,12 +111,20 @@ class Menu:
 
         # restart button
         screen.blit(self.button_restart, (
-            width // 2 - self.button_restart.get_size()[0] // 2,
-            height // 2 - self.button_restart.get_size()[1] // 2
+            self.button_restart_rect
+        ))
+
+        # enter name zone
+        screen.blit(self.enter_name, (
+            self.enter_name_rect
+        ))
+
+        # go to menu button
+        screen.blit(self.button_menu, (
+            self.button_menu_rect
         ))
 
     def update(self, pos):
-        # if user clicked to 'button'
         if not self.games_started and not is_game_over:
             if self.button_play_rect.collidepoint(pos):
                 self.games_started = True
@@ -108,9 +135,24 @@ class Menu:
             elif self.button_settings_rect.collidepoint(pos):
                 settings.settings_on = True
 
+            elif self.button_guide_rect.collidepoint(pos):
+                self.draw_guide()
+                self.is_guide_on = True
+
         elif is_game_over:
             if self.button_restart_rect.collidepoint(pos):
+                menu.games_started = True
+                score_board.add_new_data()
                 Main.start()
+                menu_sound.stop()
+                main_sound.play(10)
+
+            if self.button_menu_rect.collidepoint(pos):
+                score_board.add_new_data()
+                Main.start()
+
+    def draw_guide(self):
+        screen.blit(self.guide_menu, (0, 0))
 
 
 class SettingsMenu:
@@ -261,17 +303,68 @@ class ScoreBoard:
              height - 30)
         )
         self.is_scoreboard_on = False
+        self.page = 1
+        self.need_draw_text = False
+        self.text = ''
+        self.data = []
+
+    def get_data_from_db(self):
+        cur = con.cursor()
+        try:
+            self.data = cur.execute(''' SELECT * 
+            FROM records''').fetchall()
+            self.data = [list(inf) for inf in self.data]
+            self.data.sort(key=lambda x: x[1], reverse=True)
+        except sqlite3.OperationalError:
+            cur.execute('''CREATE TABLE IF NOT EXISTS records(
+            user_name TEXT,
+            score TEXT)''').fetchall()
+            con.commit()
+
+    def add_new_data(self):
+        if not self.text.split():
+            self.text = 'Неизвестный гонщик'
+        cur = con.cursor()
+        cur.execute('''INSERT INTO records(user_name, score)
+        VALUES(?, ?)''', (self.text, str(coin_counter))).fetchall()
+        con.commit()
+        self.text = ''
+        self.need_draw_text = False
 
     def draw_score(self):
-        screen.blit(self.main_background, (0, 0))
+        if self.page == 1:
+            screen.blit(self.main_background, (0, 0))
+        else:
+            screen.blit(self.background, (0, 0))
         screen.blit(self.button_left, self.button_left_rect)
         screen.blit(self.button_right, self.button_right_rect)
 
+        # 20 - половина размера ячейки
+        # 4 - размер границы
+
+        if self.page == 1:
+            # 33 - отступ от края экрана
+            offset = 33 + 20 + 4 - font.get_height() // 2
+        else:
+            # 31 - отступ от края экрана
+            offset = 31 + 20 + 4 - font.get_height() // 2
+        try:
+            for info in range(self.page * 9 - 9, self.page * 9):
+                text = font.render(' '.join(self.data[info]), False, (0, 0, 0))
+                screen.blit(text, (
+                    40,
+                    offset
+                ))
+                offset += 20 + 40
+        except IndexError:
+            pass
+
     def update(self, pos):
         if self.button_left_rect.collidepoint(pos):
-            print('left')
+            if self.page != 1:
+                self.page -= 1
         elif self.button_right_rect.collidepoint(pos):
-            print('right')
+            self.page += 1
 
 
 class Main:
@@ -300,6 +393,11 @@ class Main:
 
         player = Player()
         background = LoadSprites()
+
+        main_sound.stop()
+        pause_sound.stop()
+        menu_sound.play(10)
+        game_over_sound.stop()
 
         mobs_group = pygame.sprite.Group()
         player_group = pygame.sprite.Group()
@@ -344,20 +442,6 @@ class Main:
         coin_group.update()
         coin_group.draw(screen)
         screen.blit(text, (width - 25 * len(str(coin_counter)), 5))
-
-    @staticmethod
-    def get_data_from_db():
-        cur = con.cursor()
-        try:
-            data = cur.execute(''' SELECT * 
-            FROM records''').fetchall()
-        except sqlite3.OperationalError:
-            cur.execute('''CREATE TABLE IF NOT EXISTS records(
-            user_name TEXT,
-            score INTEGER)''').fetchall()
-            con.commit()
-            data = []
-        return data
 
 
 class LoadSprites(pygame.sprite.Sprite):
@@ -628,6 +712,7 @@ if __name__ == '__main__':
     used_pos = sample(pos_for_ops, 2)
     opponents = []
     coins = []
+    user_name = font.render(score_board.text, False, (0, 0, 0))
 
     # add new opponents
     for pos in used_pos:
@@ -647,7 +732,8 @@ if __name__ == '__main__':
             elif event.type == pygame.MOUSEBUTTONDOWN \
                     and not menu.games_started \
                     and not score_board.is_scoreboard_on \
-                    and not settings.settings_on:
+                    and not settings.settings_on \
+                    and not menu.is_guide_on:
                 menu.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
@@ -656,11 +742,13 @@ if __name__ == '__main__':
                 pause.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
-                    and settings.settings_on:
+                    and settings.settings_on \
+                    and not menu.is_guide_on:
                 settings.update(event.pos)
 
             elif event.type == pygame.MOUSEBUTTONDOWN \
-                    and score_board.is_scoreboard_on:
+                    and score_board.is_scoreboard_on \
+                    and not menu.is_guide_on:
                 score_board.update(event.pos)
 
             elif event.type == pygame.KEYDOWN:
@@ -670,6 +758,9 @@ if __name__ == '__main__':
                             settings.settings_on:
                         pause.is_pause_on = False
                         pause_sound.stop()
+
+                    elif menu.is_guide_on:
+                        menu.is_guide_on = False
 
                     elif not settings.settings_on and not \
                             pause.is_pause_on and \
@@ -683,6 +774,18 @@ if __name__ == '__main__':
 
                     elif score_board.is_scoreboard_on:
                         score_board.is_scoreboard_on = False
+                        score_board.page = 1
+                if score_board.need_draw_text:
+                    if event.key == pygame.K_DELETE or \
+                            event.key == pygame.K_ESCAPE or \
+                            event.key == pygame.K_q:
+                        if score_board.text != '':
+                            score_board.text = score_board.text[:-1]
+                    else:
+                        if event.unicode in ascii_letters and len(score_board.text) != 10:
+                            score_board.text += event.unicode
+                    user_name = font.render(score_board.text, False, (0, 0, 0))
+
         Main.move()
 
         if menu.games_started and not \
@@ -704,7 +807,8 @@ if __name__ == '__main__':
                 pause.is_pause_on and not \
                 is_game_over and not \
                 settings.settings_on and not \
-                score_board.is_scoreboard_on:
+                score_board.is_scoreboard_on and not \
+                menu.is_guide_on:
             menu.draw_menu()
             if not is_menu_sound_on:
                 main_sound.stop()
@@ -732,12 +836,21 @@ if __name__ == '__main__':
                 Main.draw_game()
             menu.games_started = False
             menu.game_over()
+            score_board.need_draw_text = True
+            screen.blit(user_name, (
+                menu.enter_name_rect.centerx,
+                menu.enter_name_rect.centery - user_name.get_size()[1]
+            ))
 
         elif score_board.is_scoreboard_on:
+            score_board.get_data_from_db()
             score_board.draw_score()
 
         elif settings.settings_on:
             settings.draw_menu()
+
+        elif menu.is_guide_on:
+            menu.draw_guide()
 
         # add new opponents
         if opponents[-1].rect.y >= height // 2 \
